@@ -603,7 +603,7 @@ void CodeEditor::updateExtraSelections()
     ESL sum;
 
     QTextEdit::ExtraSelection line;
-    line.format.setBackground(QColor(Qt::yellow).lighter(190));
+    line.format.setBackground(QColor(Qt::yellow).lighter(150));
     line.format.setProperty(QTextFormat::FullWidthSelection, true);
     line.cursor = textCursor();
     line.cursor.clearSelection();
