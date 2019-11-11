@@ -189,7 +189,7 @@ private:
 CodeEditor::CodeEditor(QWidget *parent) :
 	QPlainTextEdit(parent), d_showNumbers(true),
     d_undoAvail(false),d_redoAvail(false),d_copyAvail(false),d_curPos(-1),
-    d_pushBackLock(false), d_rehighlightLock(false)
+    d_pushBackLock(false), d_rehighlightLock(false), d_linkLineNr(0), d_linkColNr(0)
 {
 	setFont( defaultFont() );
     setLineWrapMode( QPlainTextEdit::NoWrap );
@@ -603,7 +603,7 @@ void CodeEditor::updateExtraSelections()
     ESL sum;
 
     QTextEdit::ExtraSelection line;
-    line.format.setBackground(QColor(Qt::yellow).lighter(150));
+    line.format.setBackground(QColor(Qt::yellow).lighter(170));
     line.format.setProperty(QTextFormat::FullWidthSelection, true);
     line.cursor = textCursor();
     line.cursor.clearSelection();
@@ -806,7 +806,7 @@ void CodeEditor::mousePressEvent(QMouseEvent* e)
 
         QApplication::restoreOverrideCursor();
         d_link.clear();
-        setCursorPosition( d_linkLineNr, 0, true );
+        setCursorPosition( d_linkLineNr, d_linkColNr, true );
     }else if( QApplication::keyboardModifiers() == Qt::ControlModifier )
     {
         /* to override

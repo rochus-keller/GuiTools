@@ -142,7 +142,7 @@ protected:
     typedef QList<QTextEdit::ExtraSelection> ESL;
     ESL d_link;
     ESL d_nonTerms;
-    int d_linkLineNr;
+    int d_linkLineNr,d_linkColNr;
     QList<Location> d_backHisto; // d_backHisto.last() ist aktuell angezeigtes Objekt
     QList<Location> d_forwardHisto;
     bool d_pushBackLock;
