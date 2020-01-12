@@ -43,25 +43,26 @@ static const int s_charPerTab = 4; // TODO: Einstellbar
 static const int s_typingLatencyMs = 200;
 static const int s_cursorLatencyMs = 500;
 
-static inline int calcPosFromIndent( const QTextBlock& b, int indent )
+static inline int calcPosFromIndent( const QTextBlock& b, int indent, int charPerTab )
 {
     const QString text = b.text();
     int spaces = 0;
     for( int i = 0; i < text.size(); i++ )
     {
         if( text[i] == QChar('\t') )
-            spaces += s_charPerTab;
+            spaces += charPerTab;
         else if( text[i] == QChar( ' ' ) )
             spaces++;
         else
             return b.position() + i; // ohne das aktuelle Zeichen, das ja kein Space ist
-        if( ( spaces / s_charPerTab ) >= indent )
+        if( ( spaces / charPerTab ) >= indent )
             return b.position() + i + 1; // inkl. dem aktuellen Zeichen, mit dem die Bedingung erfllt ist.
     }
     return b.position();
 }
 
-static inline int calcIndentsOfLine( const QTextBlock& b, int* off = 0, bool* onlyWhitespace = 0, bool* rmWhitespace = 0 )
+static inline int calcIndentsOfLine( const QTextBlock& b, int charPerTab, int* off = 0,
+                                     bool* onlyWhitespace = 0, bool* rmWhitespace = 0 )
 {
     if( onlyWhitespace )
         *onlyWhitespace = false;
@@ -76,7 +77,7 @@ static inline int calcIndentsOfLine( const QTextBlock& b, int* off = 0, bool* on
     {
         if( text[i] == QChar('\t') )
         {
-            spaces += s_charPerTab;
+            spaces += charPerTab;
             if( off )
                 *off += 1;
         }else if( text[i] == QChar( ' ' ) )
@@ -108,7 +109,7 @@ static inline int calcIndentsOfLine( const QTextBlock& b, int* off = 0, bool* on
         }
     }
 
-    return spaces / s_charPerTab;
+    return spaces / charPerTab;
 }
 
 class _HandleArea : public QWidget
@@ -191,6 +192,7 @@ CodeEditor::CodeEditor(QWidget *parent) :
     d_undoAvail(false),d_redoAvail(false),d_copyAvail(false),d_curPos(-1),
     d_pushBackLock(false), d_rehighlightLock(false), d_linkLineNr(0), d_linkColNr(0)
 {
+    d_charPerTab = s_charPerTab;
 	setFont( defaultFont() );
     setLineWrapMode( QPlainTextEdit::NoWrap );
     setTabStopWidth( 30 );
@@ -580,7 +582,7 @@ void CodeEditor::fixIndent()
         int startOfNws = 0;
         bool onlyWs;
         bool rmWs;
-        int indent = calcIndentsOfLine(b,&startOfNws,&onlyWs,&rmWs);
+        int indent = calcIndentsOfLine(b,d_charPerTab,&startOfNws,&onlyWs,&rmWs);
         if( startOfNws != 0 )
         {
             cur.setPosition( b.position() );
@@ -811,10 +813,10 @@ void CodeEditor::mousePressEvent(QMouseEvent* e)
     {
         /* to override
         QTextCursor cur = cursorForPosition(e->pos());
-        const EbnfSyntax::Symbol* sym = d_syn->findSymbolBySourcePos(cur.blockNumber() + 1,cur.positionInBlock() + 1);
+        const Ast::Symbol* sym = d_syn->findSymbolBySourcePos(cur.blockNumber() + 1,cur.positionInBlock() + 1);
         if( sym )
         {
-            const EbnfSyntax::Definition* d = d_syn->getDef( sym->d_tok.d_val );
+            const Ast::Definition* d = d_syn->getDef( sym->d_tok.d_val );
             if( d )
             {
                 pushLocation( Location( cur.blockNumber(), cur.positionInBlock() ) );
@@ -833,7 +835,7 @@ void CodeEditor::mouseMoveEvent(QMouseEvent* e)
     if( QApplication::keyboardModifiers() == Qt::ControlModifier && d_syn.constData() )
     {
         QTextCursor cur = cursorForPosition(e->pos());
-        const EbnfSyntax::Symbol* sym = d_syn->findSymbolBySourcePos(cur.blockNumber() + 1, cur.positionInBlock() + 1);
+        const Ast::Symbol* sym = d_syn->findSymbolBySourcePos(cur.blockNumber() + 1, cur.positionInBlock() + 1);
         const bool alreadyArrow = !d_link.isEmpty();
         d_link.clear();
         if( sym )
@@ -842,7 +844,7 @@ void CodeEditor::mouseMoveEvent(QMouseEvent* e)
             const int off = cur.positionInBlock() + 1 - sym->d_tok.d_colNr;
             cur.setPosition(cur.position() - off);
             cur.setPosition( cur.position() + sym->d_tok.d_len, QTextCursor::KeepAnchor );
-            const EbnfSyntax::Definition* d = d_syn->getDef( sym->d_tok.d_val );
+            const Ast::Definition* d = d_syn->getDef( sym->d_tok.d_val );
 
             if( d )
             {
@@ -881,7 +883,7 @@ void CodeEditor::paintIndents(QPaintEvent *)
     {
         const QRectF r = blockBoundingRect(block).translated(offset);
         p.setPen( Qt::lightGray );
-        const int indents = calcIndentsOfLine( block );
+        const int indents = calcIndentsOfLine( block, d_charPerTab );
         for( int i = 0; i <= indents; i++ )
         {
             const int x0 = r.x() + ( i - 1 ) * tabStopWidth() + margin + 1; // + 1 damit Cursor nicht verdeckt wird
@@ -896,7 +898,13 @@ void CodeEditor::paintIndents(QPaintEvent *)
 
 void CodeEditor::updateTabWidth()
 {
-    setTabStopWidth( fontMetrics().width( QLatin1Char('0') ) * s_charPerTab );
+    setTabStopWidth( fontMetrics().width( QLatin1Char('0') ) * d_charPerTab );
+}
+
+void CodeEditor::setCharPerTab(quint8 cpt)
+{
+    d_charPerTab = cpt;
+    updateTabWidth();
 }
 
 void CodeEditor::highlightCurrentLine()
@@ -970,11 +978,11 @@ void CodeEditor::unindent()
     cur.beginEditBlock();
     do
     {
-        const int indent = calcIndentsOfLine(b);
+        const int indent = calcIndentsOfLine(b, d_charPerTab);
         if( indent > 0 )
         {
             cur.setPosition( b.position() );
-            cur.setPosition( calcPosFromIndent( b, indent ), QTextCursor::KeepAnchor );
+            cur.setPosition( calcPosFromIndent( b, d_charPerTab, indent ), QTextCursor::KeepAnchor );
             cur.insertText( QString( indent - 1, QChar('\t') ) );
         }
         b = b.next();
@@ -994,9 +1002,9 @@ void CodeEditor::setIndentation(int i)
     cur.beginEditBlock();
     do
     {
-        const int indent = calcIndentsOfLine(b);
+        const int indent = calcIndentsOfLine(b,d_charPerTab);
         cur.setPosition( b.position() );
-        cur.setPosition( calcPosFromIndent( b, indent ), QTextCursor::KeepAnchor );
+        cur.setPosition( calcPosFromIndent( b, d_charPerTab, indent ), QTextCursor::KeepAnchor );
         cur.insertText( QString( i, QChar('\t') ) );
         b = b.next();
     }while( b.isValid() && b.position() < selEnd );

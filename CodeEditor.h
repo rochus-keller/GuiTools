@@ -71,6 +71,7 @@ public:
     void setShowNumbers( bool on );
     bool showNumbers() const { return d_showNumbers; }
     void updateTabWidth();
+    void setCharPerTab( quint8 );
 
 signals:
     void sigSyntaxUpdated();
@@ -143,6 +144,7 @@ protected:
     ESL d_link;
     ESL d_nonTerms;
     int d_linkLineNr,d_linkColNr;
+    int d_charPerTab;
     QList<Location> d_backHisto; // d_backHisto.last() ist aktuell angezeigtes Objekt
     QList<Location> d_forwardHisto;
     bool d_pushBackLock;
