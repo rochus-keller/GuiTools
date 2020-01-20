@@ -35,7 +35,7 @@ public:
 
     void newFile();
     bool loadFromFile(const QString &path);
-    bool saveToFile(const QString& path);
+    bool saveToFile(const QString& path, bool report = true);
     QString getPath() const { return d_path; }
 
     void paintHandleArea(QPaintEvent *event);

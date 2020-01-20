@@ -1042,16 +1042,18 @@ bool CodeEditor::loadFromFile(const QString &path)
     return true;
 }
 
-bool CodeEditor::saveToFile(const QString& path)
+bool CodeEditor::saveToFile(const QString& path, bool report)
 {
     QFile file(path);
     if( !file.open(QIODevice::WriteOnly ) )
     {
-        QMessageBox::critical(this,tr("Save File"), tr("Cannot save file to '%1'. %2").
-                              arg(path).arg(file.errorString()));
+        if( report )
+        {
+            QMessageBox::critical(this,tr("Save File"), tr("Cannot save file to '%1'. %2").
+                                  arg(path).arg(file.errorString()));
+        }
         return false;
     }
-
     file.write( toPlainText().toUtf8() );
     document()->setModified( false );
     d_path = path;
