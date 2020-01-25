@@ -72,9 +72,12 @@ public:
     bool showNumbers() const { return d_showNumbers; }
     void updateTabWidth();
     void setCharPerTab( quint8 );
+    void setPaintIndents(bool on);
+    void setTypingLatency( int l ) { d_typingLatencyMs = l; }
 
 signals:
     void sigSyntaxUpdated();
+    void sigUpdateLocation( int line, int col ); // cursor moved + latency
 
 public slots:
     void handleEditUndo();
@@ -139,6 +142,7 @@ protected:
     QString d_find;
     QString d_path;
     QTimer d_typingLatency;
+    int d_typingLatencyMs;
     QTimer d_cursorLatency;
     typedef QList<QTextEdit::ExtraSelection> ESL;
     ESL d_link;
@@ -153,6 +157,7 @@ protected:
     bool d_copyAvail;
     bool d_showNumbers;
     bool d_rehighlightLock;
+    bool d_paintIndents;
 };
 
 #endif // GENERICCODEEDITOR_H

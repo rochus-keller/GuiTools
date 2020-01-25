@@ -206,7 +206,6 @@ void DocTabWidget::closeTab( int i )
 	emit closing( i );
 	QWidget* w = widget(i);
 	Q_ASSERT( w != 0 );
-	removeTab( i );
 	for( int j = 0; j < d_order.size(); j++ )
 	{
 		if( d_order[j] == w ) 
@@ -215,8 +214,9 @@ void DocTabWidget::closeTab( int i )
 			break;
 		}
 	}
-	w->deleteLater();
-	d_views.removeAt( i );
+    d_views.removeAt( i );
+    removeTab( i );
+    w->deleteLater();
 }
 
 void DocTabWidget::onDocSelect()

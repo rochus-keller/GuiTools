@@ -39,8 +39,8 @@
 
 // adaptiert aus AdaViewer::AdaEditor
 
-static const int s_charPerTab = 4; // TODO: Einstellbar
-static const int s_typingLatencyMs = 200;
+static const int s_charPerTab = 4; // default
+static const int s_typingLatencyMs = 200; // default
 static const int s_cursorLatencyMs = 500;
 
 static inline int calcPosFromIndent( const QTextBlock& b, int indent, int charPerTab )
@@ -190,10 +190,11 @@ private:
 CodeEditor::CodeEditor(QWidget *parent) :
 	QPlainTextEdit(parent), d_showNumbers(true),
     d_undoAvail(false),d_redoAvail(false),d_copyAvail(false),d_curPos(-1),
-    d_pushBackLock(false), d_rehighlightLock(false), d_linkLineNr(0), d_linkColNr(0)
+    d_pushBackLock(false), d_rehighlightLock(false), d_linkLineNr(0), d_linkColNr(0),d_paintIndents(true)
 {
     d_charPerTab = s_charPerTab;
-	setFont( defaultFont() );
+    d_typingLatencyMs = s_typingLatencyMs;
+    setFont( defaultFont() );
     setLineWrapMode( QPlainTextEdit::NoWrap );
     setTabStopWidth( 30 );
     setTabChangesFocus(false);
@@ -402,7 +403,7 @@ void CodeEditor::onTextChanged()
 {
     if( d_rehighlightLock )
         return;
-    d_typingLatency.start(s_typingLatencyMs);
+    d_typingLatency.start(d_typingLatencyMs);
 }
 
 void CodeEditor::onUpdateModel()
@@ -415,6 +416,7 @@ void CodeEditor::onUpdateLocation()
     int line, col;
     getCursorPosition( &line, &col );
     pushLocation(Location(line,col));
+    emit sigUpdateLocation(line,col);
 }
 
 void CodeEditor::handleEditUndo()
@@ -722,7 +724,8 @@ void CodeEditor::resizeEvent(QResizeEvent *e)
 void CodeEditor::paintEvent(QPaintEvent *e)
 {
     QPlainTextEdit::paintEvent( e );
-    paintIndents( e );
+    if( d_paintIndents )
+        paintIndents( e );
 }
 
 static inline int _firstNwsPos( const QTextBlock& b )
@@ -905,6 +908,12 @@ void CodeEditor::setCharPerTab(quint8 cpt)
 {
     d_charPerTab = cpt;
     updateTabWidth();
+}
+
+void CodeEditor::setPaintIndents(bool on)
+{
+     d_paintIndents = on;
+     update();
 }
 
 void CodeEditor::highlightCurrentLine()
