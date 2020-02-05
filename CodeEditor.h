@@ -156,7 +156,7 @@ protected:
     bool d_redoAvail;
     bool d_copyAvail;
     bool d_showNumbers;
-    bool d_rehighlightLock;
+    bool d_noEditLock;
     bool d_paintIndents;
 };
 

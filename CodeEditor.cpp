@@ -190,7 +190,7 @@ private:
 CodeEditor::CodeEditor(QWidget *parent) :
 	QPlainTextEdit(parent), d_showNumbers(true),
     d_undoAvail(false),d_redoAvail(false),d_copyAvail(false),d_curPos(-1),
-    d_pushBackLock(false), d_rehighlightLock(false), d_linkLineNr(0), d_linkColNr(0),d_paintIndents(true)
+    d_pushBackLock(false), d_noEditLock(false), d_linkLineNr(0), d_linkColNr(0),d_paintIndents(true)
 {
     d_charPerTab = s_charPerTab;
     d_typingLatencyMs = s_typingLatencyMs;
@@ -401,7 +401,7 @@ void CodeEditor::onUpdateCursor()
 
 void CodeEditor::onTextChanged()
 {
-    if( d_rehighlightLock )
+    if( d_noEditLock )
         return;
     d_typingLatency.start(d_typingLatencyMs);
 }
@@ -1029,7 +1029,9 @@ void CodeEditor::setShowNumbers(bool on)
 
 void CodeEditor::newFile()
 {
+    d_noEditLock = true;
     setPlainText(QString());
+    d_noEditLock = false;
     d_path.clear();
     d_backHisto.clear();
     d_forwardHisto.clear();
@@ -1042,7 +1044,9 @@ bool CodeEditor::loadFromFile(const QString &path)
     QFile file(path);
     if( !file.open(QIODevice::ReadOnly ) )
         return false;
+    d_noEditLock = true;
     setPlainText( QString::fromUtf8( file.readAll() ) );
+    d_noEditLock = false;
     d_path = path;
     d_backHisto.clear();
     d_forwardHisto.clear();
