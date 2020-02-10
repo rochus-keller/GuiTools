@@ -936,6 +936,12 @@ void CodeEditor::paintHandleArea(QPaintEvent *event)
     while (block.isValid() && top <= event->rect().bottom())
     {
         painter.setPen(Qt::black);
+        if( d_breakPoints.contains( blockNumber ) )
+        {
+            const QRect r = QRect( 0, top, d_numberArea->width(), h );
+            painter.fillRect( r, Qt::darkRed );
+            painter.setPen(Qt::white);
+        }
         if( d_showNumbers && block.isVisible() && bottom >= event->rect().top())
         {
             QString number = QString::number(blockNumber + 1);
@@ -1071,6 +1077,47 @@ bool CodeEditor::saveToFile(const QString& path, bool report)
     document()->setModified( false );
     d_path = path;
     return true;
+}
+
+void CodeEditor::addBreakPoint(quint32 l)
+{
+    d_breakPoints.insert( l );
+    d_numberArea->update();
+}
+
+void CodeEditor::removeBreakPoint(quint32 l)
+{
+    d_breakPoints.remove( l );
+    d_numberArea->update();
+}
+
+bool CodeEditor::toggleBreakPoint(quint32* out)
+{
+    int line = -1;
+    getCursorPosition(&line);
+    if( line == -1 )
+        line = 0;
+    if( d_breakPoints.contains(line) )
+    {
+        d_breakPoints.remove(line);
+        d_numberArea->update();
+        if(out)
+            *out = line;
+        return false;
+    }else if( line >= 0 )
+    {
+        d_breakPoints.insert( line );
+        d_numberArea->update();
+        if(out)
+            *out = line;
+        return true;
+    }
+}
+
+void CodeEditor::clearBreakPoints()
+{
+    d_breakPoints.clear();
+    d_numberArea->update();
 }
 
 void CodeEditor::installDefaultPopup()

@@ -75,6 +75,11 @@ public:
     void setPaintIndents(bool on);
     void setTypingLatency( int l ) { d_typingLatencyMs = l; }
 
+    void addBreakPoint( quint32 );
+    void removeBreakPoint( quint32 );
+    bool toggleBreakPoint(quint32* out = 0); // current line
+    void clearBreakPoints();
+    const QSet<quint32>& getBreakPoints() const { return d_breakPoints; }
 signals:
     void sigSyntaxUpdated();
     void sigUpdateLocation( int line, int col ); // cursor moved + latency
@@ -138,6 +143,7 @@ protected slots:
     void onUpdateLocation();
 protected:
     QWidget* d_numberArea;
+    QSet<quint32> d_breakPoints;
     int d_curPos; // Zeiger für die aktuelle Ausführungsposition oder -1
     QString d_find;
     QString d_path;
