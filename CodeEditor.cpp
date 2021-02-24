@@ -1050,8 +1050,14 @@ bool CodeEditor::loadFromFile(const QString &path)
     QFile file(path);
     if( !file.open(QIODevice::ReadOnly ) )
         return false;
+    return loadFromFile( &file, path );
+}
+
+bool CodeEditor::loadFromFile(QIODevice* in, const QString& path)
+{
+    Q_ASSERT( in != 0 );
     d_noEditLock = true;
-    setPlainText( QString::fromUtf8( file.readAll() ) );
+    setPlainText( QString::fromUtf8( in->readAll() ) );
     d_noEditLock = false;
     d_path = path;
     d_backHisto.clear();

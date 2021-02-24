@@ -35,6 +35,7 @@ public:
 
     void newFile();
     bool loadFromFile(const QString &path);
+    bool loadFromFile(QIODevice*, const QString &path = QString());
     bool saveToFile(const QString& path, bool report = true);
     QString getPath() const { return d_path; }
 
