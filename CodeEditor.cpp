@@ -27,10 +27,12 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QInputDialog>
-#include <QPrinter>
 #include <QFileDialog>
 #include <QFileInfo>
+#ifdef QT_PRINTSUPPORT_LIB
 #include <QPrintDialog>
+#include <QPrinter>
+#endif
 #include <QSettings>
 #include <QFontDialog>
 #include <QShortcut>
@@ -626,6 +628,7 @@ void CodeEditor::handlePrint()
 {
 	ENABLED_IF( true );
 
+#ifdef QT_PRINTSUPPORT_LIB
 	QPrinter p;
 	p.setPageMargins( 15, 10, 10, 10, QPrinter::Millimeter );
 
@@ -634,6 +637,7 @@ void CodeEditor::handlePrint()
 	{
 		print( &p );
 	}
+#endif
 }
 
 void CodeEditor::handleExportPdf()
@@ -650,12 +654,14 @@ void CodeEditor::handleExportPdf()
 		fileName += ".pdf";
 	info.setFile( fileName );
 
+#ifdef QT_PRINTSUPPORT_LIB
 	QPrinter p;
 	p.setPageMargins( 15, 10, 10, 10, QPrinter::Millimeter );
 	p.setOutputFormat(QPrinter::PdfFormat);
 	p.setOutputFileName(fileName);
 
 	print( &p );
+#endif
 }
 
 void CodeEditor::handleShowLinenumbers()
@@ -1150,9 +1156,11 @@ void CodeEditor::installDefaultPopup()
     pop->addCommand( "Unindent", this, SLOT(handleUnindent()) );
     pop->addCommand( "Fix Indents", this, SLOT(handleFixIndent()) );
     pop->addCommand( "Set Indentation Level...", this, SLOT(handleSetIndent()) );
+#ifdef QT_PRINTSUPPORT_LIB
 	pop->addSeparator();
 	pop->addCommand( "Print...", this, SLOT(handlePrint()), tr("CTRL+P"), true );
 	pop->addCommand( "Export PDF...", this, SLOT(handleExportPdf()), tr("CTRL+SHIFT+P"), true );
+#endif
 	pop->addSeparator();
 	pop->addCommand( "Set &Font...", this, SLOT(handleSetFont()) );
     pop->addCommand( "Show &Linenumbers", this, SLOT(handleShowLinenumbers()) );

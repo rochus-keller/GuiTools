@@ -1,3 +1,4 @@
+INCLUDEPATH += ..
 
 SOURCES += \
 	$$PWD/AutoMenu.cpp \
