@@ -34,6 +34,7 @@ public:
     static QFont defaultFont();
 
     void newFile();
+    void setText( const QString& );
     bool loadFromFile(const QString &path);
     bool loadFromFile(QIODevice*, const QString &path = QString());
     bool saveToFile(const QString& path, bool report = true);

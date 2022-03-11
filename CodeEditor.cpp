@@ -45,24 +45,6 @@ static const int s_charPerTab = 4; // default
 static const int s_typingLatencyMs = 200; // default
 static const int s_cursorLatencyMs = 500;
 
-static inline int calcPosFromIndent( const QTextBlock& b, int indent, int charPerTab )
-{
-    const QString text = b.text();
-    int spaces = 0;
-    for( int i = 0; i < text.size(); i++ )
-    {
-        if( text[i] == QChar('\t') )
-            spaces += charPerTab;
-        else if( text[i] == QChar( ' ' ) )
-            spaces++;
-        else
-            return b.position() + i; // ohne das aktuelle Zeichen, das ja kein Space ist
-        if( ( spaces / charPerTab ) >= indent )
-            return b.position() + i + 1; // inkl. dem aktuellen Zeichen, mit dem die Bedingung erfllt ist.
-    }
-    return b.position();
-}
-
 static inline int calcIndentsOfLine( const QTextBlock& b, int charPerTab, int* off = 0,
                                      bool* onlyWhitespace = 0, bool* rmWhitespace = 0 )
 {
@@ -597,7 +579,7 @@ void CodeEditor::fixIndent()
             {
                 if( !rmWs )
                     indent = indent == 0 && startOfNws != 0 ? 1 : indent;
-                cur.insertText( QString( indent, QChar('\t') ) );
+                cur.insertText( QString( indent*d_charPerTab, ' ' ) );
             }
         }
         b = b.next();
@@ -976,14 +958,16 @@ void CodeEditor::indent()
     const int selEnd = cur.selectionEnd();
     Q_ASSERT( selStart <= selEnd );
 
-    QTextBlock b = document()->findBlock( selStart );
+    QTextBlock start = document()->findBlock( selStart );
+    QTextBlock b = document()->findBlock( selEnd );
     cur.beginEditBlock();
     do
     {
         cur.setPosition( b.position() );
-        cur.insertText( QChar('\t') );
-        b = b.next();
-    }while( b.isValid() && b.position() < selEnd );
+        if( b.position() != selEnd || selStart == selEnd )
+            cur.insertText( QString(d_charPerTab, ' ') );
+        b = b.previous();
+    }while( b.isValid() && b.position() >= start.position() );
     cur.endEditBlock();
 }
 
@@ -995,19 +979,21 @@ void CodeEditor::unindent()
     const int selEnd = cur.selectionEnd();
     Q_ASSERT( selStart <= selEnd );
 
-    QTextBlock b = document()->findBlock( selStart );
+    QTextBlock start = document()->findBlock( selStart );
+    QTextBlock b = document()->findBlock( selEnd );
     cur.beginEditBlock();
     do
     {
-        const int indent = calcIndentsOfLine(b, d_charPerTab);
-        if( indent > 0 )
+        int off;
+        const int indent = calcIndentsOfLine(b, d_charPerTab, &off );
+        if( indent > 0 && b.position() != selEnd )
         {
             cur.setPosition( b.position() );
-            cur.setPosition( calcPosFromIndent( b, d_charPerTab, indent ), QTextCursor::KeepAnchor );
-            cur.insertText( QString( indent - 1, QChar('\t') ) );
+            cur.setPosition( b.position() + off, QTextCursor::KeepAnchor );
+            cur.insertText( QString( ( indent - 1 ) * d_charPerTab, ' ' ) );
         }
-        b = b.next();
-    }while( b.isValid() && b.position() < selEnd );
+        b = b.previous();
+    }while( b.isValid() && b.position() >= start.position() );
     cur.endEditBlock();
 }
 
@@ -1019,16 +1005,21 @@ void CodeEditor::setIndentation(int i)
     const int selEnd = cur.selectionEnd();
     Q_ASSERT( selStart <= selEnd );
 
-    QTextBlock b = document()->findBlock( selStart );
+    QTextBlock start = document()->findBlock( selStart );
+    QTextBlock b = document()->findBlock( selEnd );
     cur.beginEditBlock();
     do
     {
-        const int indent = calcIndentsOfLine(b,d_charPerTab);
-        cur.setPosition( b.position() );
-        cur.setPosition( calcPosFromIndent( b, d_charPerTab, indent ), QTextCursor::KeepAnchor );
-        cur.insertText( QString( i, QChar('\t') ) );
-        b = b.next();
-    }while( b.isValid() && b.position() < selEnd );
+        if( b.position() != selEnd || selStart == selEnd )
+        {
+            int off;
+            calcIndentsOfLine(b,d_charPerTab, &off);
+            cur.setPosition( b.position() );
+            cur.setPosition( b.position() + off, QTextCursor::KeepAnchor );
+            cur.insertText( QString( i*d_charPerTab, ' ' ) );
+        }
+        b = b.previous();
+    }while( b.isValid() && b.position() >= start.position() );
     cur.endEditBlock();
 }
 
@@ -1042,13 +1033,20 @@ void CodeEditor::setShowNumbers(bool on)
 void CodeEditor::newFile()
 {
     d_noEditLock = true;
-    setPlainText(QString());
+    setText(QString());
     d_noEditLock = false;
     d_path.clear();
     d_backHisto.clear();
     d_forwardHisto.clear();
     document()->setModified( false );
     emit modificationChanged(false);
+}
+
+void CodeEditor::setText(const QString& str)
+{
+    QString tmp = str;
+    //tmp.replace('\t', QString(d_charPerTab,' ') ); // no, because otherwise AST positions are different
+    setPlainText(tmp);
 }
 
 bool CodeEditor::loadFromFile(const QString &path)
@@ -1063,7 +1061,7 @@ bool CodeEditor::loadFromFile(QIODevice* in, const QString& path)
 {
     Q_ASSERT( in != 0 );
     d_noEditLock = true;
-    setPlainText( QString::fromUtf8( in->readAll() ) );
+    setText( QString::fromUtf8( in->readAll() ) );
     d_noEditLock = false;
     d_path = path;
     d_backHisto.clear();
