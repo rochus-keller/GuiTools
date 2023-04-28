@@ -757,6 +757,13 @@ void CodeEditor::keyPressEvent(QKeyEvent *e)
                 return;
             }
         }
+        if( !isReadOnly() && e->modifiers() == Qt::NoModifier )
+        {
+            // replace TAB key by spaces
+            e->accept();
+            textCursor().insertText( QString(d_charPerTab, ' ') );
+            return;
+        }
 	}else if( e->key() == Qt::Key_Backtab )
     {
         if( e->modifiers() & Qt::ControlModifier )
@@ -1122,6 +1129,7 @@ bool CodeEditor::toggleBreakPoint(quint32* out)
             *out = line;
         return true;
     }
+    return false;
 }
 
 void CodeEditor::clearBreakPoints()
