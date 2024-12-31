@@ -1067,8 +1067,13 @@ bool CodeEditor::loadFromFile(const QString &path)
 bool CodeEditor::loadFromFile(QIODevice* in, const QString& path)
 {
     Q_ASSERT( in != 0 );
+    return loadFromString(QString::fromUtf8( in->readAll() ), path);
+}
+
+bool CodeEditor::loadFromString(const QString& text, const QString& path)
+{
     d_noEditLock = true;
-    setText( QString::fromUtf8( in->readAll() ) );
+    setText( text );
     d_noEditLock = false;
     d_path = path;
     d_backHisto.clear();
